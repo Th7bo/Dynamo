@@ -1,0 +1,31 @@
+leaderboards:
+  test:
+    name: "Test Leaderboard"
+    location: ""
+    dynamic: true
+    var:
+      - "test1"
+      - "test2"
+    entries: 10
+    format:
+      1: "<gold>#1 <green>$player <gray>($value)"
+      default: "<gray>#$place <green>$player <gray>($value)"
+    player-in-top:
+      color-name: "<green>"
+      lines:
+        - "Intro"
+        - ""
+        - "$stats"
+        - ""
+        - "Refreshes in $refreshTime"
+        - ""
+    default:
+      lines:
+        - "Intro"
+        - ""
+        - "$stats"
+        - ""
+        - "Your position: #$place"
+        - ""
+        - "Refreshes in $refreshTime"
+        - ""

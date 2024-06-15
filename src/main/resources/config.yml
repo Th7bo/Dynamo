@@ -1,0 +1,5 @@
+serverToClient: true
+clientToServer: true
+packetListenerEnabled: false
+ignoredPackets:
+  - "Test"
