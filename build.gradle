@@ -61,5 +61,6 @@ kotlin {
 }
 
 reobfJar {
-    outputJar.set(file("C:\\Users\\thibo\\Documents\\Cloods\\plugins\\Leaderboards.jar"))
+//    outputJar.set(file("C:\\Users\\thibo\\Documents\\Cloods\\plugins\\Leaderboards.jar"))
+//    outputJar.set(file("C:\\Users\\thibo\\Documents\\FloodPR-backup\\plugins\\Leaderboards.jar"))
 }

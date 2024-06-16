@@ -3,6 +3,7 @@ package com.th7bo.leaderboards.managers
 import com.th7bo.leaderboards.Leaderboards
 import com.th7bo.leaderboards.data.NormalLeaderboards
 import com.th7bo.leaderboards.data.DynamicLeaderboard
+import com.th7bo.leaderboards.data.SortedPlaceholder
 import com.th7bo.leaderboards.utils.asLocation
 import org.bukkit.Location
 import org.bukkit.configuration.file.YamlConfiguration
@@ -13,6 +14,7 @@ object LeaderboardManager {
     lateinit var config: YamlConfiguration
     val leaderboards = mutableMapOf<String, NormalLeaderboards>()
     val dynamicLeaderboards = mutableMapOf<String, DynamicLeaderboard>()
+    var sortedPlaceholders: MutableMap<String, SortedPlaceholder> = mutableMapOf()
     private var id: Int = 10_000
 
     fun init() {
@@ -43,6 +45,12 @@ object LeaderboardManager {
         }
         for (leaderboard in dynamicLeaderboards.values) {
             leaderboard.disable()
+        }
+        sortedPlaceholders.forEach() { (_, sorted) ->
+            run {
+                sorted.updatePlaceholderData()
+                sorted.sortPlaceholder()
+            }
         }
         leaderboards.clear()
         dynamicLeaderboards.clear()

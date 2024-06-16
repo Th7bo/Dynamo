@@ -2,6 +2,7 @@ package com.th7bo.leaderboards.data
 
 import com.th7bo.leaderboards.Leaderboards.Companion.instance
 import com.th7bo.leaderboards.managers.LeaderboardManager
+import com.th7bo.leaderboards.managers.LeaderboardManager.sortedPlaceholders
 import com.th7bo.leaderboards.utils.*
 import com.th7bo.leaderboards.utils.FormatHelper.Companion.parse
 import io.papermc.paper.adventure.PaperAdventure
@@ -38,7 +39,7 @@ class DynamicLeaderboard(var key: String, var loc: Location, var placeholders: L
     private var refreshTime = (section!!.getString("refresh-time")!!).parseDurationToSeconds()
     private var names = section!!.getStringList("names")
     private var lastReset = System.currentTimeMillis()
-    private var sortedPlaceholders: MutableList<SortedPlaceholder> = mutableListOf()
+//    private var sortedPlaceholders: MutableList<SortedPlaceholder> = mutableListOf()
     private var taskID: MutableList<Int> = mutableListOf()
 
     private lateinit var leftVector: Vector
@@ -57,7 +58,9 @@ class DynamicLeaderboard(var key: String, var loc: Location, var placeholders: L
 
             instance.server.pluginManager.registerEvents(this, instance)
             for (holder in placeholders) {
-                sortedPlaceholders.add(SortedPlaceholder(holder))
+                if (!sortedPlaceholders.containsKey(holder)) {
+                    sortedPlaceholders[holder] = SortedPlaceholder(holder)
+                }
             }
             taskID.add(Bukkit.getScheduler().scheduleSyncRepeatingTask(instance, {
                 updatePlaceholders()
@@ -73,8 +76,12 @@ class DynamicLeaderboard(var key: String, var loc: Location, var placeholders: L
     fun updatePlaceholders() {
         lastReset = System.currentTimeMillis()
         val time = measureTime {
-            sortedPlaceholders.forEach(SortedPlaceholder::updatePlaceholderData)
-            sortedPlaceholders.forEach(SortedPlaceholder::sortPlaceholder)
+            for (holder in placeholders) {
+                if (sortedPlaceholders.containsKey(holder)) {
+                    sortedPlaceholders[holder]!!.updatePlaceholderData()
+                    sortedPlaceholders[holder]!!.sortPlaceholder()
+                }
+            }
         }
         Bukkit.broadcast("Updated $key in $time".parse(true))
     }
@@ -113,7 +120,7 @@ class DynamicLeaderboard(var key: String, var loc: Location, var placeholders: L
 
     fun despawnAll(p: Player) {
         if (interactions[p.uniqueId] == null) return
-        if (interactions[p.uniqueId] == null) return
+        if (textDisplayID[p.uniqueId] == null) return
         val intlist = IntArrayList()
         for (id in interactions[p.uniqueId]!!)
             intlist.add(id)
@@ -223,8 +230,9 @@ class DynamicLeaderboard(var key: String, var loc: Location, var placeholders: L
         val scores: MutableList<String> = mutableListOf()
         var added = 0
         repeat(entries) {
-            val player = sortedPlaceholders[index].getPlayer(it) ?: return@repeat
-            val score = sortedPlaceholders[index].getValue(it) ?: return@repeat
+            val holder = placeholders[index]
+            val player = sortedPlaceholders[holder]!!.getPlayer(it) ?: return@repeat
+            val score = sortedPlaceholders[holder]!!.getValue(it) ?: return@repeat
             players.add(Bukkit.getOfflinePlayer(player).name!!)
             scores.add(NumberHelper(score).toShorten())
             added += 1
@@ -237,6 +245,8 @@ class DynamicLeaderboard(var key: String, var loc: Location, var placeholders: L
         if (p.name in players) {
             val format = getLeaderboardLines(true)
             val color = section!!.get("player-in-top.color-name")
+            val holder = placeholders[index]
+            val playerPlace = (sortedPlaceholders[holder]!!.getPlayerPosition(p.uniqueId) + 1).toString()
             for (line in format) {
                 if (line == "\$stats") {
                     var place = 0
@@ -252,11 +262,12 @@ class DynamicLeaderboard(var key: String, var loc: Location, var placeholders: L
                         lines.add(line_format)
                     }
                 } else {
-                    lines.add(line.replace("\$refreshTime", getTimeLeft()).replace("\$variable", names[index]))
+                    lines.add(line.replace("\$refreshTime", getTimeLeft()).replace("\$place", playerPlace).replace("\$variable", names[index]).replace("\$total", sortedPlaceholders[holder]!!.getSize().toString()))
                 }
             }
         } else {
-            val playerPlace = sortedPlaceholders[index].getPlayerPosition(p.uniqueId).toString()
+            val holder = placeholders[index]
+            val playerPlace = (sortedPlaceholders[holder]!!.getPlayerPosition(p.uniqueId) + 1).toString()
             val format = getLeaderboardLines(false)
             for (line in format) {
                 if (line == "\$stats") {
@@ -268,7 +279,7 @@ class DynamicLeaderboard(var key: String, var loc: Location, var placeholders: L
                         lines.add(line_format)
                     }
                 } else {
-                    lines.add(line.replace("\$refreshTime", getTimeLeft()).replace("\$place", playerPlace).replace("\$variable", names[index]))
+                    lines.add(line.replace("\$refreshTime", getTimeLeft()).replace("\$place", playerPlace).replace("\$variable", names[index]).replace("\$total", sortedPlaceholders[holder]!!.getSize().toString()))
                 }
             }
         }

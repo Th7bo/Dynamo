@@ -34,7 +34,7 @@ class Leaderboards : JavaPlugin() {
             override fun run() {
                 LeaderboardManager.init()
             }
-        }.runTaskLater(this, 20L)
+        }.runTaskLater(this, 40L)
     }
 
     fun handleError(t: Throwable) {
