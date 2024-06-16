@@ -1,39 +1,30 @@
-name: Java CI
+name: Build DEV Jars
 
-on: [ push ]
+on: [push, pull_request]
 
 jobs:
-  build:
+  build_dev_jars:
+    name: Build DEV jars
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-java@v3
+      - uses: actions/checkout@v2
         with:
-          java-version: '17'
+          fetch-depth: 0
+      - name: Setup JDK
+        uses: actions/setup-java@v2
+        with:
           distribution: 'adopt'
-
-      - name: Get Commit Data
-        id: commit
-        uses: pr-mpt/actions-commit-hash@v2
-
-      - name: Validate Gradle wrapper
-        uses: gradle/wrapper-validation-action@v1
-
-      - name: Change Wrapper Permissions
-        run: chmod +x ./gradlew
-
-      - name: Gradle Build
-        uses: gradle/gradle-build-action@v2
+          java-version: '17'
+      - name: Build with Gradle
+        run: |
+         ./gradlew jar
+          git_hash=$(git rev-parse --short "$GITHUB_SHA")
+          echo "git_hash=$git_hash" >> $GITHUB_ENV
+          echo "snapshotVersion=5.5-SNAPSHOT" >> $GITHUB_ENV
+          echo "artifactPath=$(pwd)/builds" >> $GITHUB_ENV
+      - name: Upload Plugin jar
+        uses: actions/upload-artifact@v3
         with:
-          arguments: shadowJar --scan
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          VERSION: dev-${{ steps.commit.outputs.short }}
-
-      - uses: actions/upload-artifact@v3
-        with:
-          name: MikChanNoChat-dev-${{ steps.commit.outputs.short }}.zip
-          path: |
-            build/libs/
-            LICENSE.txt
+          name: Plugin-${{ env.snapshotVersion }}-${{ env.git_hash }}.jar
+          path: ${{ env.artifactPath }}/Plugin-${{ env.snapshotVersion }}.jar
