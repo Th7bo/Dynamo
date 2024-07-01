@@ -1,4 +1,4 @@
-package com.th7bo.leaderboards.utils
+package com.th7bo.dynamo.utils
 
 import org.bukkit.map.MinecraftFont
 

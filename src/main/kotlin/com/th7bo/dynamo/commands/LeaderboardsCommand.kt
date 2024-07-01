@@ -3,10 +3,11 @@
     permission = "leaderboards.leaderboards"
 )
 
-package com.th7bo.leaderboards.commands
+package com.th7bo.dynamo.commands
 
-import com.th7bo.leaderboards.managers.LeaderboardManager
-import com.th7bo.leaderboards.utils.FormatHelper.Companion.parse
+import com.th7bo.dynamo.Dynamo
+import com.th7bo.dynamo.managers.LeaderboardManager
+import com.th7bo.dynamo.utils.FormatHelper.Companion.parse
 import me.honkling.commando.common.annotations.Command
 import org.bukkit.command.CommandSender
 import org.bukkit.entity.Player
@@ -23,5 +24,5 @@ fun leaderboards(executor: CommandSender) {
 }
 
 fun reload(executor: Player) {
-    LeaderboardManager.init()
+    LeaderboardManager.init(Dynamo.instance)
 }

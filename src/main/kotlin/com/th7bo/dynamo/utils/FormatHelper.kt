@@ -1,10 +1,9 @@
-package com.th7bo.leaderboards.utils
+package com.th7bo.dynamo.utils
 
-import com.th7bo.leaderboards.Leaderboards
-import com.th7bo.leaderboards.utils.FormatHelper.Companion.chatcolorResolver
-import com.th7bo.leaderboards.utils.FormatHelper.Companion.mainColorResolver
-import com.th7bo.leaderboards.utils.FormatHelper.Companion.parse
-import com.th7bo.leaderboards.utils.FormatHelper.Companion.secondColorResolver
+import com.th7bo.dynamo.utils.FormatHelper.Companion.chatcolorResolver
+import com.th7bo.dynamo.utils.FormatHelper.Companion.mainColorResolver
+import com.th7bo.dynamo.utils.FormatHelper.Companion.parse
+import com.th7bo.dynamo.utils.FormatHelper.Companion.secondColorResolver
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.format.NamedTextColor
 import net.kyori.adventure.text.format.TextColor
@@ -88,7 +87,6 @@ class FormatHelper(private val text: String) {
             ) { args: ArgumentQueue, _ ->
                 val uuidString = args.popOr("uuid expected").value()
                 val uuid = UUID.fromString(uuidString)
-                val player = Leaderboards.instance.server.getPlayer(uuid) ?: throw IllegalArgumentException("Player $uuidString not found")
 
                 val color = NamedTextColor.GRAY // TODO: Get the player's chatcolor for real
                 Tag.styling(TextColor.color(color.red(), color.green(), color.blue()))

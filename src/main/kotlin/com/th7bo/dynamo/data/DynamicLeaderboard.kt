@@ -1,17 +1,11 @@
-package com.th7bo.leaderboards.data
+package com.th7bo.dynamo.data
 
-import com.th7bo.leaderboards.Leaderboards.Companion.instance
-import com.th7bo.leaderboards.managers.LeaderboardManager
-import com.th7bo.leaderboards.managers.LeaderboardManager.sortedPlaceholders
-import com.th7bo.leaderboards.utils.*
-import com.th7bo.leaderboards.utils.FormatHelper.Companion.parse
-import io.papermc.paper.adventure.PaperAdventure
+import com.th7bo.dynamo.managers.LeaderboardManager.sortedPlaceholders
+import com.th7bo.dynamo.utils.FormatHelper.Companion.parse
+import com.th7bo.dynamo.managers.LeaderboardManager
+import com.th7bo.dynamo.utils.*
 import it.unimi.dsi.fastutil.ints.IntArrayList
-import me.clip.placeholderapi.PlaceholderAPI
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer
-import net.minecraft.network.protocol.game.ClientboundSetEntityDataPacket
-import net.minecraft.network.syncher.EntityDataSerializers
-import net.minecraft.network.syncher.SynchedEntityData.DataValue
 import org.bukkit.Bukkit
 import org.bukkit.Location
 import org.bukkit.entity.Player
@@ -24,12 +18,12 @@ import org.bukkit.Color
 import org.bukkit.event.player.PlayerQuitEvent
 import org.bukkit.event.player.PlayerRespawnEvent
 import org.bukkit.event.player.PlayerTeleportEvent
-import org.bukkit.scheduler.BukkitRunnable
+import org.bukkit.plugin.Plugin
 import java.util.*
 import kotlin.time.measureTime
 
 
-class DynamicLeaderboard(var key: String, var loc: Location, var placeholders: List<String>) : Listener{
+class DynamicLeaderboard(plugin: Plugin, var key: String, var loc: Location, var placeholders: List<String>) : Listener{
 
     var interactions: MutableMap<UUID, ArrayList<Int>> = mutableMapOf()
     var index: MutableMap<UUID, Int> = mutableMapOf()
@@ -56,24 +50,24 @@ class DynamicLeaderboard(var key: String, var loc: Location, var placeholders: L
             leftVector = Vector(left.x - loca.x, left.y - loca.y, left.z - loca.z)
             rightVector = Vector(right.x - loca.x, right.y - loca.y, right.z - loca.z)
 
-            instance.server.pluginManager.registerEvents(this, instance)
+            plugin.server.pluginManager.registerEvents(this, plugin)
             for (holder in placeholders) {
                 if (!sortedPlaceholders.containsKey(holder)) {
                     sortedPlaceholders[holder] = SortedPlaceholder(holder)
                 }
             }
-            taskID.add(Bukkit.getScheduler().scheduleSyncRepeatingTask(instance, {
+            taskID.add(Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, {
                 updatePlaceholders()
                 update()
             }, 0, 20L * refreshTime))
-            taskID.add(Bukkit.getScheduler().scheduleSyncRepeatingTask(instance, {
+            taskID.add(Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, {
                 update()
             }, 0, 10L))
         }
 
     }
 
-    fun updatePlaceholders() {
+    private fun updatePlaceholders() {
         lastReset = System.currentTimeMillis()
         val time = measureTime {
             for (holder in placeholders) {
@@ -86,7 +80,7 @@ class DynamicLeaderboard(var key: String, var loc: Location, var placeholders: L
         Bukkit.broadcast("Updated $key in $time".parse(true))
     }
 
-    fun getTimeLeft(): String {
+    private fun getTimeLeft(): String {
         val time = ((lastReset + refreshTime * 1000) - System.currentTimeMillis()) / 1000
         if (time <= 0) {
             lastReset = System.currentTimeMillis()
@@ -118,20 +112,19 @@ class DynamicLeaderboard(var key: String, var loc: Location, var placeholders: L
         update(e.player, true)
     }
 
-    fun despawnAll(p: Player) {
+    private fun despawnAll(p: Player) {
         if (interactions[p.uniqueId] == null) return
         if (textDisplayID[p.uniqueId] == null) return
-        val intlist = IntArrayList()
-        for (id in interactions[p.uniqueId]!!)
-            intlist.add(id)
-        intlist.add(textDisplayID[p.uniqueId]!!)
-        val packet = Misc.getDestroyPacket(intlist)
-        Misc.sendPacket(p, packet)
+        for (id in interactions[p.uniqueId]!!) {
+            val packet = Misc.getDestroyPacket(id)
+            Misc.sendPacket(p, packet)
+        }
+
         interactions[p.uniqueId]!!.clear()
         textDisplayID.remove(p.uniqueId)
     }
 
-    fun update() {
+    private fun update() {
         for (p in Bukkit.getOnlinePlayers()) {
             update(p)
         }
@@ -141,15 +134,14 @@ class DynamicLeaderboard(var key: String, var loc: Location, var placeholders: L
 
     fun update(p: Player, updateInteractions: Boolean = false) {
         if (p.world != loc.world) return despawnAll(p)
-        if (p.location.distanceSquared(loc) >= 100) return despawnAll(p)
+        if (p.location.distanceSquared(loc) >= 300) return despawnAll(p)
         if (interactions[p.uniqueId] == null) interactions[p.uniqueId] = arrayListOf()
         if (updateInteractions) {
             if (interactions[p.uniqueId] != null) {
-                val intlist = IntArrayList()
-                for (id in interactions[p.uniqueId]!!)
-                    intlist.add(id)
-                val packet = Misc.getDestroyPacket(intlist)
-                Misc.sendPacket(p, packet)
+                for (id in interactions[p.uniqueId]!!) {
+                    val packet = Misc.getDestroyPacket(id)
+                    Misc.sendPacket(p, packet)
+                }
                 interactions[p.uniqueId]!!.clear()
             }
         }
@@ -167,51 +159,52 @@ class DynamicLeaderboard(var key: String, var loc: Location, var placeholders: L
         val comp = lines.joinToString("\n").toComponent()
 
         val locationLeft = loc.clone().add(leftVector.clone().multiply(maxWidth / 100))
-        val idLeft = LeaderboardManager.getID()
-        var packet = Misc.getSpawnPacket(idLeft, locationLeft, net.minecraft.world.entity.EntityType.INTERACTION)
-        Misc.sendPacket(p, packet)
-        interactions[p.uniqueId]!!.add(idLeft)
-
         val locationRight = loc.clone().add(rightVector.clone().multiply(maxWidth / 100))
-        val idRight = LeaderboardManager.getID()
-        packet = Misc.getSpawnPacket(idRight, locationRight, net.minecraft.world.entity.EntityType.INTERACTION)
-        Misc.sendPacket(p, packet)
-        interactions[p.uniqueId]!!.add(idRight)
+        spawnInteractions(p, locationLeft, locationRight)
 
         if (textDisplayID[p.uniqueId] == null) {
+            println("Spawning display")
             val id = LeaderboardManager.getID()
-            val spawnPacket = Misc.getSpawnPacket(id, loc, net.minecraft.world.entity.EntityType.TEXT_DISPLAY)
+            val spawnPacket = Misc.getSpawnPacket(id, loc)
             Misc.sendPacket(p, spawnPacket)
-            val dataList: ArrayList<DataValue<*>> = ArrayList()
-            dataList.add(DataValue(15, EntityDataSerializers.BYTE, 0.toByte())) // Fixed
-            dataList.add(DataValue(20, EntityDataSerializers.FLOAT, 100f)) // Width
-            dataList.add(DataValue(21, EntityDataSerializers.FLOAT, 100f)) // Height
-            dataList.add(DataValue(23, EntityDataSerializers.COMPONENT, PaperAdventure.WRAPPER_AWARE_SERIALIZER.serialize(comp))) // Text
-            val argb = Color.fromARGB(100, 0, 0, 0).asARGB()
-            dataList.add(DataValue(25, EntityDataSerializers.INT, argb)) // Background
 
-            val dataPacket = ClientboundSetEntityDataPacket(id, dataList)
+            val dataPacket = Misc.getDataPacket(id, 0.toByte(), 100f, 100f, comp, Color.fromARGB(100, 0, 0, 0).asARGB())
             Misc.sendPacket(p, dataPacket)
             textDisplayID[p.uniqueId] = id
         } else {
-            val dataList: ArrayList<DataValue<*>> = ArrayList()
-            dataList.add(DataValue(23, EntityDataSerializers.COMPONENT, PaperAdventure.WRAPPER_AWARE_SERIALIZER.serialize(comp))) // Text
-            val dataPacket = ClientboundSetEntityDataPacket(textDisplayID[p.uniqueId]!!, dataList)
+            val dataPacket = Misc.getUpdatePacket(textDisplayID[p.uniqueId]!!, comp)
             Misc.sendPacket(p, dataPacket)
         }
+    }
+
+    private fun spawnInteractions(p: Player, locLeft: Location, locRight: Location) {
+        for (id in interactions[p.uniqueId]!!) {
+            val packet = Misc.getDestroyPacket(id)
+            Misc.sendPacket(p, packet)
+        }
+        interactions[p.uniqueId]!!.clear()
+
+        val idLeft = LeaderboardManager.getID()
+        var packet = Misc.getSpawnPacketInteraction(idLeft, locLeft)
+        Misc.sendPacket(p, packet)
+        interactions[p.uniqueId]!!.add(idLeft)
+
+        val idRight = LeaderboardManager.getID()
+        packet = Misc.getSpawnPacketInteraction(idRight, locRight)
+        Misc.sendPacket(p, packet)
+        interactions[p.uniqueId]!!.add(idRight)
     }
 
     fun disable() {
 
         interactions.entries.forEach {
-            val intlist = IntArrayList()
             val offlinePlayer = Bukkit.getOfflinePlayer(it.key)
             if (offlinePlayer.isOnline) {
                 it.value.forEach { id ->
-                    intlist.add(id)
+                    val packet = Misc.getDestroyPacket(id)
+                    Misc.sendPacket(Bukkit.getPlayer(it.key)!!, packet)
                 }
-                intlist.add(textDisplayID[it.key]!!)
-                val packet = Misc.getDestroyPacket(intlist)
+                val packet = Misc.getDestroyPacket(textDisplayID[it.key]!!)
                 Misc.sendPacket(Bukkit.getPlayer(it.key)!!, packet)
             }
         }
@@ -232,7 +225,7 @@ class DynamicLeaderboard(var key: String, var loc: Location, var placeholders: L
         repeat(entries) {
             val holder = placeholders[index]
             val player = sortedPlaceholders[holder]!!.getPlayer(it) ?: return@repeat
-            val score = sortedPlaceholders[holder]!!.getValue(it) ?: return@repeat
+            val score = sortedPlaceholders[holder]!!.getValue(it)
             players.add(Bukkit.getOfflinePlayer(player).name!!)
             scores.add(NumberHelper(score).toShorten())
             added += 1

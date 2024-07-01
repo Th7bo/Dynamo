@@ -1,4 +1,4 @@
-package com.th7bo.leaderboards.data
+package com.th7bo.dynamo.data
 
 import org.bukkit.Location
 

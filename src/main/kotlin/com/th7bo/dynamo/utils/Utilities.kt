@@ -1,4 +1,4 @@
-package com.th7bo.leaderboards.utils
+package com.th7bo.dynamo.utils
 
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver
@@ -19,6 +19,8 @@ fun String.toUpperCase(): String =
 fun String.toTinyString(): String = FormatHelper(this).toSmallCaps()
 
 fun Number.fix(): String = "%.1f".format(this.toDouble())
+
+fun Location.toPacketEvents(): com.github.retrooper.packetevents.protocol.world.Location = com.github.retrooper.packetevents.protocol.world.Location(this.x, this.y, this.z, this.yaw, this.pitch)
 
 val EPSILON = Math.ulp(1.0) * 2.0
 private fun isSignificant(value: Double): Boolean {
@@ -58,6 +60,7 @@ fun String.parseDurationToSeconds(): Int {
 
 fun String.asLocation(): Location {
     val split = this.split(",")
+    if (split.size != 6) throw IllegalArgumentException("Invalid location string, most likely due to default config!")
     return Location(
         Bukkit.getWorld(split[0])!!,
         split[1].toDouble(),

@@ -1,6 +1,6 @@
-package com.th7bo.leaderboards.data
+package com.th7bo.dynamo.data
 
-import com.th7bo.leaderboards.Leaderboards.Companion.instance
+import com.th7bo.dynamo.Dynamo.Companion.instance
 import me.clip.placeholderapi.PlaceholderAPI
 import java.util.*
 
@@ -25,13 +25,17 @@ class SortedPlaceholder(val placeholder: String) {
     fun updatePlaceholderData() {
         if (System.currentTimeMillis() - lastSorted < 1000) return
         for (player in instance.server.onlinePlayers) {
+            println("Updating placeholder data for $placeholder for ${player.name}")
             val value = PlaceholderAPI.setPlaceholders(player, "%$placeholder%")
             unsortedMap[player.uniqueId] = value.toDoubleOrNull() ?: continue
         }
+        println("Updated placeholder data for $placeholder")
+        println("Unsorted map size: ${unsortedMap.size}")
     }
 
     fun sortPlaceholder() {
         if (System.currentTimeMillis() - lastSorted < 1000) return
+        sortedMap.clear()
         unsortedMap.toList().sortedBy { (_, value) -> value }.reversed().toMap(sortedMap)
         lastSorted = System.currentTimeMillis()
     }
@@ -40,7 +44,7 @@ class SortedPlaceholder(val placeholder: String) {
         return sortedMap.keys.elementAtOrNull(index)
     }
 
-    fun getValue(index: Int): Double? {
+    fun getValue(index: Int): Double {
         return sortedMap.values.elementAtOrNull(index) ?: 0.0
     }
 

@@ -1,6 +1,14 @@
-name: Leaderboards
+name: Dynamo
 version: '${version}'
-main: com.th7bo.leaderboards.Leaderboards
-api-version: '1.20'
-author: Th7bo
-softdepend: [PlaceholderAPI]
+main: com.th7bo.dynamo.Dynamo
+api-version: '1.19'
+depend:
+  - PlaceholderAPI
+softdepend:
+  - ProtocolLib
+  - ProtocolSupport
+  - ViaVersion
+  - ViaBackwards
+  - ViaRewind
+  - Geyser-Spigot
+  - Skript
