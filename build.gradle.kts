@@ -1,12 +1,11 @@
 plugins {
-    id("com.github.johnrengelman.shadow") version "8.1.1"
-    id("io.papermc.paperweight.userdev") version "1.7.1" apply false
+    id("io.github.goooler.shadow") version "8.1.8"
     kotlin("jvm") version "2.0.0-Beta4"
     java
 }
 
 apply(plugin = "kotlin")
-apply(plugin = "com.github.johnrengelman.shadow")
+apply(plugin = "io.github.goooler.shadow")
 group = "com.th7bo"
 version = "1.0"
 description = "Leaderboards plugin"
@@ -24,15 +23,18 @@ repositories {
 }
 
 dependencies {
-    compileOnly("io.papermc.paper:paper-api:1.20.4-R0.1-SNAPSHOT")
+    compileOnly("io.papermc.paper:paper-api:1.19.4-R0.1-SNAPSHOT")
     implementation("com.github.honkling.commando:spigot:b909c9b")
     compileOnly("me.clip:placeholderapi:2.11.6")
     implementation("com.github.retrooper:packetevents-spigot:2.4.0")
 }
 
 tasks {
-    kotlin {
-        jvmToolchain(17)
+    withType(JavaCompile::class.java).forEach {
+        it.options.compilerArgs.add("-source")
+        it.options.compilerArgs.add("17")
+        it.options.compilerArgs.add("-target")
+        it.options.compilerArgs.add("21")
     }
 }
 
@@ -46,7 +48,7 @@ tasks {
                 "name" to project.name,
                 "version" to project.version,
                 "description" to project.description,
-                "apiVersion" to "1.20"
+                "apiVersion" to "1.19"
             )
         inputs.properties(props)
         filteringCharset = Charsets.UTF_8.name()
@@ -61,8 +63,3 @@ tasks {
         destinationDirectory.set(file("Server\\plugins\\"))
     }
 }
-
-//reobfJar {
-////    outputJar.set(file("C:\\Users\\thibo\\Documents\\Cloods\\plugins\\Leaderboards.jar"))
-////    outputJar.set(file("C:\\Users\\thibo\\Documents\\FloodPR-backup\\plugins\\Leaderboards.jar"))
-//}

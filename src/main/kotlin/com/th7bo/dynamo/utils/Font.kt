@@ -1,11 +1,8 @@
 package com.th7bo.dynamo.utils
 
-import org.bukkit.map.MinecraftFont
-
 object Font {
-
+    private val font = CustomFont(true)
     fun getWidth(s: String): Int {
-        return MinecraftFont.Font.getWidth(s)
+        return font.getWidth(s)
     }
-
 }

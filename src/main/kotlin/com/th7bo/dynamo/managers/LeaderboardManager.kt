@@ -46,8 +46,9 @@ object LeaderboardManager {
         for (leaderboard in dynamicLeaderboards.values) {
             leaderboard.disable()
         }
-        sortedPlaceholders.forEach() { (_, sorted) ->
+        sortedPlaceholders.forEach() { (_, sorted) -> // is this really needed?
             run {
+                sorted.addOfflinePlayers()
                 sorted.updatePlaceholderData()
                 sorted.sortPlaceholder()
             }

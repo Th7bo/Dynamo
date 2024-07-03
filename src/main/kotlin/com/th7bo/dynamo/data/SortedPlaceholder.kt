@@ -2,12 +2,11 @@ package com.th7bo.dynamo.data
 
 import com.th7bo.dynamo.Dynamo.Companion.instance
 import me.clip.placeholderapi.PlaceholderAPI
-import java.util.*
 
-class SortedPlaceholder(val placeholder: String) {
-    val unsortedMap = mutableMapOf<UUID, Double>()
-    val sortedMap = mutableMapOf<UUID, Double>()
-    var lastSorted = System.currentTimeMillis()
+class SortedPlaceholder(private val placeholder: String) {
+    private val unsortedMap = mutableMapOf<String, Double>()
+    private val sortedMap = mutableMapOf<String, Double>()
+    private var lastSorted = System.currentTimeMillis() - 2000
 
     init {
         addOfflinePlayers()
@@ -18,19 +17,17 @@ class SortedPlaceholder(val placeholder: String) {
     fun addOfflinePlayers() {
         for (player in instance.server.offlinePlayers) { // offline players only need to be added once, since they don't change
             val value = PlaceholderAPI.setPlaceholders(player, "%$placeholder%")
-            unsortedMap[player.uniqueId] = value.toDoubleOrNull() ?: continue
+            val name = player.name ?: continue
+            unsortedMap[name] = value.toDoubleOrNull() ?: 0.0
         }
     }
 
     fun updatePlaceholderData() {
         if (System.currentTimeMillis() - lastSorted < 1000) return
         for (player in instance.server.onlinePlayers) {
-            println("Updating placeholder data for $placeholder for ${player.name}")
             val value = PlaceholderAPI.setPlaceholders(player, "%$placeholder%")
-            unsortedMap[player.uniqueId] = value.toDoubleOrNull() ?: continue
+            unsortedMap[player.name] = value.toDoubleOrNull() ?: continue
         }
-        println("Updated placeholder data for $placeholder")
-        println("Unsorted map size: ${unsortedMap.size}")
     }
 
     fun sortPlaceholder() {
@@ -40,7 +37,7 @@ class SortedPlaceholder(val placeholder: String) {
         lastSorted = System.currentTimeMillis()
     }
 
-    fun getPlayer(index: Int): UUID? {
+    fun getPlayer(index: Int): String? {
         return sortedMap.keys.elementAtOrNull(index)
     }
 
@@ -48,7 +45,7 @@ class SortedPlaceholder(val placeholder: String) {
         return sortedMap.values.elementAtOrNull(index) ?: 0.0
     }
 
-    fun getPlayerPosition(uuid: UUID) : Int {
+    fun getPlayerPosition(uuid: String) : Int {
         return sortedMap.keys.indexOf(uuid)
     }
 

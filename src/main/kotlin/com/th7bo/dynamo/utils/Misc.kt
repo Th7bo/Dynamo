@@ -8,7 +8,9 @@ import com.github.retrooper.packetevents.wrapper.PacketWrapper
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerDestroyEntities
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityMetadata
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSpawnEntity
+import com.th7bo.dynamo.utils.FormatHelper.Companion.parse
 import net.kyori.adventure.text.Component
+import org.bukkit.Bukkit
 import org.bukkit.Location
 import org.bukkit.entity.Player
 import org.slf4j.LoggerFactory
@@ -16,7 +18,19 @@ import java.util.*
 
 object Misc {
 
-    val LOGGER: org.slf4j.Logger = LoggerFactory.getLogger("Leaderboards")
+    private val OFFSETS: MutableMap<String, Int> = mutableMapOf(
+        "1.19.4" to -1,
+        "1.20" to -1,
+        "1.20.1" to -1,
+        "1.20.2" to 0,
+        "1.20.4" to 0,
+        "1.20.5" to 0,
+        "1.20.6" to 0,
+        "1.21" to 0
+    )
+
+    private val LOGGER: org.slf4j.Logger = LoggerFactory.getLogger("Leaderboards")
+    private val VERSION = Bukkit.getMinecraftVersion().replace("[.]", "")
 
     fun handleError(t: Throwable) {
         LOGGER.error("{}", t.javaClass.simpleName)
@@ -29,6 +43,14 @@ object Misc {
             LOGGER.error("Caused by:")
             handleError(t.cause!!)
         }
+    }
+
+    fun log(msg: String) {
+        Bukkit.getConsoleSender().sendMessage(msg.parse(true))
+    }
+
+    fun error(msg: String) {
+        Bukkit.getConsoleSender().sendMessage(("<dark_red><underlined>$msg").parse(true))
     }
 
     //
@@ -50,31 +72,24 @@ object Misc {
 
 
     fun sendPacket(p: Player, packet: PacketWrapper<*>) {
-//        println("Sending packet to ${p.name}")
-//        println("Packet: ${packet::class.simpleName}")
         PacketEvents.getAPI().playerManager.sendPacket(p, packet)
     }
 
-    fun getDataPacket(id: Int, b: Byte, width: Float, height: Float, text: Component, color: Int): PacketWrapper<*> {
-        val data = listOf(EntityData(15, EntityDataTypes.BYTE, b), EntityData(20, EntityDataTypes.FLOAT, width), EntityData(21, EntityDataTypes.FLOAT, height), EntityData(23, EntityDataTypes.ADV_COMPONENT, text), EntityData(25, EntityDataTypes.INT, color))
-        val packet = WrapperPlayServerEntityMetadata(id, data)
-
-//        val dataList: ArrayList<SynchedEntityData.DataValue<*>> = ArrayList()
-//        dataList.add(SynchedEntityData.DataValue(15, EntityDataSerializers.BYTE, b)) // Fixed
-//        dataList.add(SynchedEntityData.DataValue(20, EntityDataSerializers.FLOAT, width)) // Width
-//        dataList.add(SynchedEntityData.DataValue(21, EntityDataSerializers.FLOAT, height)) // Height
-//        dataList.add(SynchedEntityData.DataValue(23, EntityDataSerializers.COMPONENT, PaperAdventure.WRAPPER_AWARE_SERIALIZER.serialize(text))) // Text
-//        dataList.add(SynchedEntityData.DataValue(25, EntityDataSerializers.INT, color)) // Background
-        return packet
+    fun getDataPacket(id: Int, b: Byte, width: Float, height: Float, text: Component, color: Int, index: Int): PacketWrapper<*> {
+        val offset = if (index != 0) index else OFFSETS.getOrDefault(VERSION, 0)
+        val data = listOf(
+            EntityData(15 + offset, EntityDataTypes.BYTE, b),
+            EntityData(20 + offset, EntityDataTypes.FLOAT, width),
+            EntityData(21 + offset, EntityDataTypes.FLOAT, height),
+            EntityData(23 + offset, EntityDataTypes.ADV_COMPONENT, text),
+            EntityData(25 + offset, EntityDataTypes.INT, color)
+        )
+        return WrapperPlayServerEntityMetadata(id, data)
     }
 
     fun getUpdatePacket(id: Int, text: Component): PacketWrapper<*> {
-
-        val data = listOf(EntityData(23, EntityDataTypes.ADV_COMPONENT, text))
-        val packet = WrapperPlayServerEntityMetadata(id, data)
-
-//        val dataList = ArrayList<SynchedEntityData.DataValue<*>>()
-//        dataList.add(SynchedEntityData.DataValue(23, EntityDataSerializers.COMPONENT, PaperAdventure.WRAPPER_AWARE_SERIALIZER.serialize(text)))
-        return packet
+        val offset = OFFSETS.getOrDefault(VERSION, 0)
+        val data = listOf(EntityData(23 + offset, EntityDataTypes.ADV_COMPONENT, text))
+        return WrapperPlayServerEntityMetadata(id, data)
     }
 }

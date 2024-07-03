@@ -1,5 +1,6 @@
 package com.th7bo.dynamo.utils
 
+import com.th7bo.dynamo.Dynamo
 import com.th7bo.dynamo.utils.FormatHelper.Companion.chatcolorResolver
 import com.th7bo.dynamo.utils.FormatHelper.Companion.mainColorResolver
 import com.th7bo.dynamo.utils.FormatHelper.Companion.parse
@@ -55,7 +56,7 @@ val small_caps = mapOf(
     "y" to "ʏ",
     "z" to "ᴢ"
 )
-val prefixComponent = "<main><bold>LB<reset> <dark_gray>→ <gray>".parse()
+val prefixComponent = "<main><bold>Dynamo<reset> <dark_gray>→ <gray>".parse()
 
 class FormatHelper(private val text: String) {
 
@@ -64,8 +65,9 @@ class FormatHelper(private val text: String) {
 
     // Parse text to MiniMessage component
     fun parse(prefix: Boolean = false): Component {
-        val message = miniMessage.deserialize(text)
-            .decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE) // NOTE: This is a workaround for things being italic by default
+        var message = miniMessage.deserialize(text)
+        if (Dynamo.enabled)
+            message = message.decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE) // NOTE: This is a workaround for things being italic by default
 
         return if (prefix) prefixComponent.append(message)
         else message
