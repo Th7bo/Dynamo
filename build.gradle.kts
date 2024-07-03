@@ -38,11 +38,11 @@ tasks {
     }
 }
 
-build {
-    dependsOn(shadowJar)
-}
-
 tasks {
+    build {
+        dependsOn(shadowJar)
+    }
+
     javadoc { options.encoding = Charsets.UTF_8.name() }
 
     processResources {
