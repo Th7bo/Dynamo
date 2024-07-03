@@ -38,6 +38,9 @@ tasks {
     }
 }
 
+build {
+    dependsOn(shadowJar)
+}
 
 tasks {
     javadoc { options.encoding = Charsets.UTF_8.name() }
@@ -57,7 +60,7 @@ tasks {
 
     shadowJar {
         minimize()
-        archiveFileName.set("${project.name}-$version.jar")
+        archiveFileName.set("${project.name}.jar")
         relocate("com.github.retrooper.packetevents", "com.th7bo.dynamo.packetevents.api")
         relocate("io.github.retrooper.packetevents", "com.th7bo.dynamo.packetevents.impl")
         destinationDirectory.set(file("Server\\plugins\\"))
