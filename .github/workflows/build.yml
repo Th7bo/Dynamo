@@ -31,4 +31,4 @@ jobs:
                     # Artifact name
                     name: Dynamo-Artifact
                     # A file, directory or wildcard pattern that describes what to upload
-                    path: build/libs/Dynamo*.jar #woops
+                    path: build/libs/Dynamo.jar

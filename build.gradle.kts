@@ -60,9 +60,9 @@ tasks {
 
     shadowJar {
         minimize()
-        archiveFileName.set("${project.name}.jar")
+        archiveFileName.set("Dynamo.jar")
         relocate("com.github.retrooper.packetevents", "com.th7bo.dynamo.packetevents.api")
         relocate("io.github.retrooper.packetevents", "com.th7bo.dynamo.packetevents.impl")
-        destinationDirectory.set(file("Server\\plugins\\"))
+//        destinationDirectory.set(file("Server\\plugins\\"))
     }
 }
