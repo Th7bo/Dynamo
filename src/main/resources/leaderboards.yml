@@ -1,8 +1,9 @@
 leaderboards:
   test:
     name: "Test Leaderboard"
-    location: ""
+    location: "world,0,100,0,0,0"
     dynamic: true
+    refresh-time: 10m
     var:
       - "test1"
       - "test2"
