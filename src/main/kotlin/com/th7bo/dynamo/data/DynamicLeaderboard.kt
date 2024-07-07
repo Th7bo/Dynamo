@@ -1,5 +1,6 @@
 package com.th7bo.dynamo.data
 
+import com.th7bo.dynamo.Dynamo.Companion.instance
 import com.th7bo.dynamo.managers.LeaderboardManager.sortedPlaceholders
 import com.th7bo.dynamo.managers.LeaderboardManager
 import com.th7bo.dynamo.utils.*
@@ -17,25 +18,54 @@ import org.bukkit.event.player.PlayerQuitEvent
 import org.bukkit.event.player.PlayerRespawnEvent
 import org.bukkit.event.player.PlayerTeleportEvent
 import org.bukkit.plugin.Plugin
+import java.io.File
 import java.util.*
 
 
-class DynamicLeaderboard(plugin: Plugin, var key: String, var loc: Location, var placeholders: List<String>) : Listener{
+class DynamicLeaderboard(var key: String) : Listener {
 
     var interactions: MutableMap<UUID, ArrayList<Int>> = mutableMapOf()
     var index: MutableMap<UUID, Int> = mutableMapOf()
+
     private var section = LeaderboardManager.config.getConfigurationSection("leaderboards.$key")
     private var textDisplayID: MutableMap<UUID, Int> = mutableMapOf()
-    private var name = section!!.getString("name")!!
-    private var refreshTime = (section!!.getString("refresh-time")!!).parseDurationToSeconds()
-    private var names = section!!.getStringList("names")
     private var lastReset = System.currentTimeMillis()
     private var taskID: MutableList<Int> = mutableListOf()
+
+    var refreshTime = (section!!.getString("refresh-time")!!).parseDurationToSeconds()
+    var names = section!!.getStringList("names")
+    var loc = section!!.getString("location")!!.asLocation()
+    var placeholders = section!!.getStringList("placeholders")
+    var entries = section!!.getInt("entries")
+    var formats: MutableMap<Int, String> = mutableMapOf()
+    var defaultFormat = section!!.getString("format.default", "<gray>#\$place <green>\$player <gray>(\$value)")
+    var topColor = section!!.getString("player-in-top.color-name", "<green>")
+    var playerInTopLines: MutableList<String> = section!!.getStringList("player-in-top.lines")
+    var defaultLines: MutableList<String> = section!!.getStringList("default.lines")
 
     private lateinit var leftVector: Vector
     private lateinit var rightVector: Vector
 
-    init {
+    fun save() {
+        section!!.set("name", key)
+        section!!.set("names", names)
+        section!!.set("location", "${loc.world!!.name},${loc.x},${loc.y},${loc.z},${loc.yaw},${loc.pitch}")
+        section!!.set("refresh-time", refreshTime.formatTime())
+        section!!.set("dynamic", true)
+        section!!.set("placeholders", placeholders)
+        section!!.set("entries", entries)
+        for((key, value) in formats) {
+            section!!.set("format.$key", value)
+        }
+        section!!.set("format.default", defaultFormat)
+        section!!.set("player-in-top.color-name", topColor)
+        section!!.set("player-in-top.lines", playerInTopLines)
+        section!!.set("default.lines", defaultLines)
+        LeaderboardManager.config.save(File(instance.dataFolder, "leaderboards.yml"))
+
+    }
+
+    fun init(): DynamicLeaderboard {
         if (section == null) {
             LeaderboardManager.dynamicLeaderboards.remove(key)
         } else {
@@ -46,20 +76,29 @@ class DynamicLeaderboard(plugin: Plugin, var key: String, var loc: Location, var
             leftVector = Vector(left.x - loca.x, left.y - loca.y, left.z - loca.z)
             rightVector = Vector(right.x - loca.x, right.y - loca.y, right.z - loca.z)
 
-            plugin.server.pluginManager.registerEvents(this, plugin)
+            instance.server.pluginManager.registerEvents(this, instance)
             for (holder in placeholders) {
                 if (!sortedPlaceholders.containsKey(holder)) {
                     sortedPlaceholders[holder] = SortedPlaceholder(holder)
                 }
             }
-            taskID.add(Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, {
+
+            repeat(entries) {
+                val format = section!!.getString("format.$it")
+                if (format != null) {
+                    formats[it] = format
+                }
+            }
+
+            taskID.add(Bukkit.getScheduler().scheduleSyncRepeatingTask(instance, {
                 updatePlaceholders()
                 update()
             }, 0, 20L * refreshTime))
-            taskID.add(Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, {
+            taskID.add(Bukkit.getScheduler().scheduleSyncRepeatingTask(instance, {
                 update()
             }, 0, 19L))
         }
+        return this
 
     }
 
@@ -204,7 +243,6 @@ class DynamicLeaderboard(plugin: Plugin, var key: String, var loc: Location, var
     }
 
     fun getLines(p: Player): MutableList<String> {
-        val entries = section!!.get("entries") as Int
         val lines: MutableList<String> = mutableListOf()
         var index = (index[p.uniqueId] ?: 0)
         if (index < 0) index = placeholders.size - 1
@@ -227,7 +265,6 @@ class DynamicLeaderboard(plugin: Plugin, var key: String, var loc: Location, var
 
         if (p.name in players) {
             val format = getLeaderboardLines(true)
-            val color = section!!.get("player-in-top.color-name")
             val holder = placeholders[index]
             val playerPlace = (sortedPlaceholders[holder]!!.getPlayerPosition(p.name) + 1).toString()
             for (line in format) {
@@ -235,10 +272,10 @@ class DynamicLeaderboard(plugin: Plugin, var key: String, var loc: Location, var
                     var place = 0
                     for (play in players) {
                         place += 1
-                        var line_format = (if (section!!.isSet("format.$place")) section!!.getString("format.$place") else section!!.get("format.default", "<gray>#$place <green>\$player <gray>(\$value)"))!!.toString()
+                        var line_format = if (formats.containsKey(place)) formats[place]!! else defaultFormat!!
                         line_format = line_format.replace("\$value", scores[place - 1]).replace("\$place", place.toString())
                         line_format = if (play == p.name) {
-                            line_format.replace("\$player", "$color${p.name}")
+                            line_format.replace("\$player", "$topColor${p.name}")
                         } else {
                             line_format.replace("\$player", play)
                         }
@@ -257,7 +294,7 @@ class DynamicLeaderboard(plugin: Plugin, var key: String, var loc: Location, var
                     var place = 0
                     for (play in players) {
                         place += 1
-                        var line_format = (if (section!!.isSet("format.$place")) section!!.getString("format.$place") else section!!.get("format.default", "<gray>#$place <green>\$player <gray>(\$value)"))!!.toString()
+                        var line_format = if (formats.containsKey(place)) formats[place]!! else defaultFormat!!
                         line_format = line_format.replace("\$value", scores[place - 1]).replace("\$place", place.toString()).replace("\$player", play)
                         lines.add(line_format)
                     }
@@ -271,6 +308,6 @@ class DynamicLeaderboard(plugin: Plugin, var key: String, var loc: Location, var
     }
 
     private fun getLeaderboardLines(top: Boolean): MutableList<String> {
-        return if (top) section!!.getStringList("player-in-top.lines") else section!!.getStringList("default.lines")
+        return if (top) playerInTopLines else defaultLines
     }
 }

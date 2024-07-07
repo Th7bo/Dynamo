@@ -20,17 +20,15 @@ object LeaderboardManager {
     fun init(instance: Plugin) {
         config = YamlConfiguration.loadConfiguration(File(instance.dataFolder, "leaderboards.yml"))
         clear()
+        if (config.getConfigurationSection("leaderboards") == null) return
         for (key in config.getConfigurationSection("leaderboards")!!.getKeys(false)) {
             try {
                 val leaderboard = config.getConfigurationSection("leaderboards.$key") ?: continue
-                val loc = leaderboard.getString("location")!!.asLocation()
                 val dynamic = leaderboard.getBoolean("dynamic", false)
                 if (dynamic) {
-                    val variable = leaderboard.getStringList("placeholders")
-                    dynamicLeaderboards[key] = DynamicLeaderboard(instance, key, loc, variable)
+                    dynamicLeaderboards[key] = DynamicLeaderboard(key).init()
                 } else {
-                    val variable = leaderboard.getString("placeholders")!!
-                    leaderboards[key] = NormalLeaderboards(key, loc, variable)
+                    leaderboards[key] = NormalLeaderboards(key)
                 }
             } catch (e: Exception) {
                 Misc.handleError(e)
@@ -45,13 +43,7 @@ object LeaderboardManager {
         }
         for (leaderboard in dynamicLeaderboards.values) {
             leaderboard.disable()
-        }
-        sortedPlaceholders.forEach() { (_, sorted) -> // is this really needed?
-            run {
-                sorted.addOfflinePlayers()
-                sorted.updatePlaceholderData()
-                sorted.sortPlaceholder()
-            }
+            leaderboard.save()
         }
         leaderboards.clear()
         dynamicLeaderboards.clear()

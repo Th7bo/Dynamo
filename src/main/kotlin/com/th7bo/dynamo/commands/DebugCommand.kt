@@ -1,20 +1,15 @@
 @file:Command(
-    "debug",
-    permission = "leaderboards.debug"
+    "test",
+    permission = "leaderboards.test"
 )
 
 package com.th7bo.dynamo.commands
 
-import com.th7bo.dynamo.managers.LeaderboardManager
-import com.th7bo.dynamo.utils.toComponent
+import com.th7bo.dynamo.gui.GuiManager
 import me.honkling.commando.common.annotations.Command
 import org.bukkit.command.CommandSender
 
-fun debug(executor: CommandSender, key: String) {
+fun test(executor: CommandSender) {
     val player = executor as? org.bukkit.entity.Player ?: return
-    val lb = LeaderboardManager.dynamicLeaderboards[key] ?: return
-    for (line in lb.getLines(player)) {
-        executor.sendMessage(line.toComponent())
-    }
-    executor.sendMessage("Disabled")
+    GuiManager.openCreateGUI(player, 1)
 }

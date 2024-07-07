@@ -53,6 +53,14 @@ object Misc {
         Bukkit.getConsoleSender().sendMessage(("<dark_red><underlined>$msg").parse(true))
     }
 
+    fun log(p: Player, msg: String) {
+        p.sendMessage(msg.parse(true))
+    }
+
+    fun error(p: Player, msg: String) {
+        p.sendMessage(("<dark_red><underlined>$msg").parse(true))
+    }
+
     //
     fun getSpawnPacket(id: Int, loc: Location): PacketWrapper<*> {
         return WrapperPlayServerSpawnEntity(id, UUID.randomUUID(), EntityTypes.TEXT_DISPLAY, loc.toPacketEvents(), 0f, 0, null)

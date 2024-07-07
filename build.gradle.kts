@@ -27,14 +27,15 @@ dependencies {
     implementation("com.github.honkling.commando:spigot:b909c9b")
     compileOnly("me.clip:placeholderapi:2.11.6")
     implementation("com.github.retrooper:packetevents-spigot:2.4.0")
+    implementation("dev.triumphteam:triumph-gui:3.1.10")
 }
 
 tasks {
-    withType(JavaCompile::class.java).forEach {
-        it.options.compilerArgs.add("-source")
-        it.options.compilerArgs.add("17")
-        it.options.compilerArgs.add("-target")
-        it.options.compilerArgs.add("21")
+    withType(JavaCompile::class.java).configureEach {
+        options.compilerArgs.add("-source")
+        options.compilerArgs.add("17")
+        options.compilerArgs.add("-target")
+        options.compilerArgs.add("21")
     }
 }
 
@@ -63,6 +64,7 @@ tasks {
         archiveFileName.set("Dynamo.jar")
         relocate("com.github.retrooper.packetevents", "com.th7bo.dynamo.packetevents.api")
         relocate("io.github.retrooper.packetevents", "com.th7bo.dynamo.packetevents.impl")
-//        destinationDirectory.set(file("Server\\plugins\\"))
+        relocate("dev.triumphteam.gui", "com.th7bo.dynamo.gui")
+        destinationDirectory.set(file("Server\\plugins\\"))
     }
 }

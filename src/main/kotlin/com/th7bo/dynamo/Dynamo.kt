@@ -3,6 +3,7 @@ package com.th7bo.dynamo
 import com.github.retrooper.packetevents.PacketEvents
 import com.github.retrooper.packetevents.event.PacketListenerPriority
 import com.th7bo.dynamo.listeners.EntityInteractListener
+import com.th7bo.dynamo.listeners.ChatListener
 import com.th7bo.dynamo.managers.LeaderboardManager
 import com.th7bo.dynamo.utils.Misc
 import com.th7bo.dynamo.utils.Version
@@ -33,8 +34,9 @@ class Dynamo : JavaPlugin() {
         }
         instance = this
         enablePacketEvents()
+        ChatListener()
         val commandManager = SpigotCommandManager(this)
-        commandManager.registerCommands("com.th7bo.leaderboards.commands")
+        commandManager.registerCommands("com.th7bo.dynamo.commands")
         saveResource("leaderboards.yml", false)
         object : BukkitRunnable() {
             override fun run() {

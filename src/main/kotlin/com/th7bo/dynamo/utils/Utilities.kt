@@ -22,12 +22,30 @@ fun Number.fix(): String = "%.1f".format(this.toDouble())
 
 fun Location.toPacketEvents(): com.github.retrooper.packetevents.protocol.world.Location = com.github.retrooper.packetevents.protocol.world.Location(this.x, this.y, this.z, this.yaw, this.pitch)
 
+fun Location.formatRaw(): String = "${this.world.name},${this.x},${this.y},${this.z},${this.yaw},${this.pitch}"
+fun Location.format(): String = "X: ${this.x.fix()}, Y: ${this.y.fix()}, Z: ${this.z.fix()}, Yaw: ${this.yaw.fix()}, Pitch: ${this.pitch.fix()}, World: ${this.world.name}"
+
 val EPSILON = Math.ulp(1.0) * 2.0
 private fun isSignificant(value: Double): Boolean {
     return abs(value) >= EPSILON
 }
 
 fun Long.formatTime(): String {
+    val days = this / (24 * 3600)
+    val hours = this % (24 * 3600) / 3600
+    val minutes = this % 3600 / 60
+    val remainingSeconds = this % 60
+
+    val string = buildString {
+        if (days > 0) append("${days}d, ")
+        if (hours > 0) append("${hours}h, ")
+        if (minutes > 0) append("${minutes}m, ")
+        if (remainingSeconds > 0) append("${remainingSeconds}s")
+    }.trimEnd(',', ' ')
+    return string
+}
+
+fun Int.formatTime(): String {
     val days = this / (24 * 3600)
     val hours = this % (24 * 3600) / 3600
     val minutes = this % 3600 / 60
