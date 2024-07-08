@@ -24,7 +24,6 @@ repositories {
 
 dependencies {
     compileOnly("io.papermc.paper:paper-api:1.19.4-R0.1-SNAPSHOT")
-    implementation("com.github.honkling.commando:spigot:b909c9b")
     compileOnly("me.clip:placeholderapi:2.11.6")
     implementation("com.github.retrooper:packetevents-spigot:2.4.0")
     implementation("dev.triumphteam:triumph-gui:3.1.10")

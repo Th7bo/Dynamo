@@ -17,12 +17,11 @@ import org.bukkit.Color
 import org.bukkit.event.player.PlayerQuitEvent
 import org.bukkit.event.player.PlayerRespawnEvent
 import org.bukkit.event.player.PlayerTeleportEvent
-import org.bukkit.plugin.Plugin
 import java.io.File
 import java.util.*
 
 
-class DynamicLeaderboard(var key: String) : Listener {
+class Leaderboard(var key: String, var build: Boolean = false) : Listener {
 
     var interactions: MutableMap<UUID, ArrayList<Int>> = mutableMapOf()
     var index: MutableMap<UUID, Int> = mutableMapOf()
@@ -32,26 +31,31 @@ class DynamicLeaderboard(var key: String) : Listener {
     private var lastReset = System.currentTimeMillis()
     private var taskID: MutableList<Int> = mutableListOf()
 
-    var refreshTime = (section!!.getString("refresh-time")!!).parseDurationToSeconds()
-    var names = section!!.getStringList("names")
-    var loc = section!!.getString("location")!!.asLocation()
-    var placeholders = section!!.getStringList("placeholders")
-    var entries = section!!.getInt("entries")
+    var refreshTime = 0
+    var names: MutableList<String> = mutableListOf()
+    var loc: Location? = null
+    var placeholders: MutableList<String> = mutableListOf()
+    var entries = 10
+    var dynamic = true
     var formats: MutableMap<Int, String> = mutableMapOf()
-    var defaultFormat = section!!.getString("format.default", "<gray>#\$place <green>\$player <gray>(\$value)")
-    var topColor = section!!.getString("player-in-top.color-name", "<green>")
-    var playerInTopLines: MutableList<String> = section!!.getStringList("player-in-top.lines")
-    var defaultLines: MutableList<String> = section!!.getStringList("default.lines")
+    var defaultFormat = "Not Set"
+    var topColor = "Not Set"
+    var playerInTopLines: MutableList<String> = mutableListOf()
+    var defaultLines: MutableList<String> = mutableListOf()
+    var editing = false
 
     private lateinit var leftVector: Vector
     private lateinit var rightVector: Vector
 
     fun save() {
+        if (section == null) {
+            section = LeaderboardManager.config.createSection("leaderboards").createSection(key)
+        }
         section!!.set("name", key)
         section!!.set("names", names)
-        section!!.set("location", "${loc.world!!.name},${loc.x},${loc.y},${loc.z},${loc.yaw},${loc.pitch}")
+        section!!.set("location", "${loc!!.world!!.name},${loc!!.x},${loc!!.y},${loc!!.z},${loc!!.yaw},${loc!!.pitch}")
         section!!.set("refresh-time", refreshTime.formatTime())
-        section!!.set("dynamic", true)
+        section!!.set("dynamic", dynamic)
         section!!.set("placeholders", placeholders)
         section!!.set("entries", entries)
         for((key, value) in formats) {
@@ -65,11 +69,31 @@ class DynamicLeaderboard(var key: String) : Listener {
 
     }
 
-    fun init(): DynamicLeaderboard {
+    fun load() {
+        refreshTime = if (!build) (section!!.getString("refresh-time")!!).parseDurationToSeconds() else 60
+        names = section!!.getStringList("names")
+        loc = section!!.getString("location")!!.asLocation()
+        placeholders = section!!.getStringList("placeholders")
+        entries = section!!.getInt("entries")
+        formats = mutableMapOf()
+        dynamic = section!!.getBoolean("dynamic")
+        defaultFormat = section!!.getString("format.default", "<gray>#\$place <green>\$player <gray>(\$value)")!!
+        topColor = section!!.getString("player-in-top.color-name", "<green>")!!
+        playerInTopLines = section!!.getStringList("player-in-top.lines")
+        defaultLines = section!!.getStringList("default.lines")
+    }
+
+    fun init(): Leaderboard {
+        Misc.log("Initializing Leaderboard $key")
         if (section == null) {
-            LeaderboardManager.dynamicLeaderboards.remove(key)
+            LeaderboardManager.leaderboards.remove(key)
         } else {
-            val loca = loc.clone()
+            if (!build) {
+                Misc.log("Loading $key from config")
+                load()
+            }
+
+            val loca = loc!!.clone()
             val left = loca.clone().getCustomRelative(0.0, -1.5, 0.0)
             val right = loca.clone().getCustomRelative(0.0, 1.5, 0.0)
             section = section!!
@@ -103,6 +127,7 @@ class DynamicLeaderboard(var key: String) : Listener {
     }
 
     private fun updatePlaceholders() {
+        if (editing) return
         lastReset = System.currentTimeMillis()
         for (holder in placeholders) {
             if (sortedPlaceholders.containsKey(holder)) {
@@ -113,6 +138,7 @@ class DynamicLeaderboard(var key: String) : Listener {
     }
 
     private fun getTimeLeft(): String {
+        if (editing) return "Editing"
         val time = ((lastReset + refreshTime * 1000) - System.currentTimeMillis()) / 1000
         if (time <= 0) {
             lastReset = System.currentTimeMillis()
@@ -123,14 +149,14 @@ class DynamicLeaderboard(var key: String) : Listener {
 
     @EventHandler
     fun join(e: PlayerJoinEvent) {
-        if (e.player.world != loc.world) return
-        update(e.player, true)
+        if (e.player.world != loc!!.world) return
+        update(e.player)
     }
 
     @EventHandler
     fun respawn(e: PlayerRespawnEvent) {
-        if (e.player.world != loc.world) return despawnAll(e.player)
-        update(e.player, true)
+        if (e.player.world != loc!!.world) return despawnAll(e.player)
+        update(e.player)
     }
 
     @EventHandler
@@ -140,8 +166,8 @@ class DynamicLeaderboard(var key: String) : Listener {
 
     @EventHandler
     fun teleport(e: PlayerTeleportEvent) {
-        if (e.to.world != loc.world) return despawnAll(e.player)
-        update(e.player, true)
+        if (e.to.world != loc!!.world) return despawnAll(e.player)
+        update(e.player)
     }
 
     private fun despawnAll(p: Player) {
@@ -165,18 +191,27 @@ class DynamicLeaderboard(var key: String) : Listener {
         }
     }
 
-    fun update(p: Player, updateInteractions: Boolean = false) {
-        if (p.world != loc.world) return despawnAll(p)
-        if (p.location.distance(loc) >= 200) return despawnAll(p)
+    fun update(p: Player) {
+        if (p.world != loc!!.world) return despawnAll(p)
+        if (p.location.distance(loc!!) >= 200) return despawnAll(p)
         if (interactions[p.uniqueId] == null) interactions[p.uniqueId] = arrayListOf()
-        if (updateInteractions) {
-            if (interactions[p.uniqueId] != null) {
-                for (id in interactions[p.uniqueId]!!) {
-                    val packet = Misc.getDestroyPacket(id)
-                    Misc.sendPacket(p, packet)
-                }
-                interactions[p.uniqueId]!!.clear()
+
+        if (editing) {
+            if (textDisplayID[p.uniqueId] == null) {
+                val id = LeaderboardManager.getID()
+
+                val spawnPacket = Misc.getSpawnPacket(id, loc!!)
+                Misc.sendPacket(p, spawnPacket)
+
+                val dataPacket = Misc.getDataPacket(id, 0, 100f, 100f, "<dark_red>Leaderboard is being edited".toComponent(), Color.fromARGB(100, 0, 0, 0).asARGB(), 0)
+                Misc.sendPacket(p, dataPacket)
+
+                textDisplayID[p.uniqueId] = id
+            } else {
+                val dataPacket = Misc.getUpdatePacket(textDisplayID[p.uniqueId]!!, "<dark_red>Leaderboard is being edited".toComponent())
+                Misc.sendPacket(p, dataPacket)
             }
+            return
         }
 
         val lines = getLines(p)
@@ -189,13 +224,13 @@ class DynamicLeaderboard(var key: String) : Listener {
             }
         }
         val comp = lines.joinToString("\n").toComponent()
-        val locationLeft = loc.clone().add(leftVector.clone().multiply(maxWidth / 100))
-        val locationRight = loc.clone().add(rightVector.clone().multiply(maxWidth / 100))
-        spawnInteractions(p, locationLeft, locationRight)
+        val locationLeft = loc!!.clone().add(leftVector.clone().multiply(maxWidth / 100))
+        val locationRight = loc!!.clone().add(rightVector.clone().multiply(maxWidth / 100))
+        if (dynamic) spawnInteractions(p, locationLeft, locationRight)
         if (textDisplayID[p.uniqueId] == null) {
             val id = LeaderboardManager.getID()
 
-            val spawnPacket = Misc.getSpawnPacket(id, loc)
+            val spawnPacket = Misc.getSpawnPacket(id, loc!!)
             Misc.sendPacket(p, spawnPacket)
 
             val dataPacket = Misc.getDataPacket(id, 0, 100f, 100f, comp, Color.fromARGB(100, 0, 0, 0).asARGB(), 0)
@@ -209,6 +244,7 @@ class DynamicLeaderboard(var key: String) : Listener {
     }
 
     private fun spawnInteractions(p: Player, locLeft: Location, locRight: Location) {
+        if (!dynamic) return
         for (id in interactions[p.uniqueId]!!) {
             val packet = Misc.getDestroyPacket(id)
             Misc.sendPacket(p, packet)
@@ -227,22 +263,17 @@ class DynamicLeaderboard(var key: String) : Listener {
     }
 
     fun disable() {
-        interactions.entries.forEach {
+        textDisplayID.entries.forEach {
             val offlinePlayer = Bukkit.getOfflinePlayer(it.key)
             if (offlinePlayer.isOnline) {
-                it.value.forEach { id ->
-                    val packet = Misc.getDestroyPacket(id)
-                    Misc.sendPacket(Bukkit.getPlayer(it.key)!!, packet)
-                }
-                val packet = Misc.getDestroyPacket(textDisplayID[it.key]!!)
-                Misc.sendPacket(Bukkit.getPlayer(it.key)!!, packet)
+                despawnAll(offlinePlayer.player!!)
             }
         }
         taskID.forEach(Bukkit.getScheduler()::cancelTask)
         HandlerList.unregisterAll(this)
     }
 
-    fun getLines(p: Player): MutableList<String> {
+    private fun getLines(p: Player): MutableList<String> {
         val lines: MutableList<String> = mutableListOf()
         var index = (index[p.uniqueId] ?: 0)
         if (index < 0) index = placeholders.size - 1

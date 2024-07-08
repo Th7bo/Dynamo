@@ -2,13 +2,14 @@ package com.th7bo.dynamo
 
 import com.github.retrooper.packetevents.PacketEvents
 import com.github.retrooper.packetevents.event.PacketListenerPriority
+import com.th7bo.dynamo.commands.DebugCommand
+import com.th7bo.dynamo.commands.LeaderboardsCommand
 import com.th7bo.dynamo.listeners.EntityInteractListener
-import com.th7bo.dynamo.listeners.ChatListener
+import com.th7bo.dynamo.listeners.EventListener
 import com.th7bo.dynamo.managers.LeaderboardManager
 import com.th7bo.dynamo.utils.Misc
 import com.th7bo.dynamo.utils.Version
 import io.github.retrooper.packetevents.factory.spigot.SpigotPacketEventsBuilder
-import me.honkling.commando.spigot.SpigotCommandManager
 import org.bukkit.Bukkit
 import org.bukkit.plugin.java.JavaPlugin
 import org.bukkit.scheduler.BukkitRunnable
@@ -19,6 +20,11 @@ class Dynamo : JavaPlugin() {
     override fun onLoad() {
         super.onLoad()
         loadPacketEvents()
+    }
+
+    fun registerAll() {
+        getCommand("leaderboards")?.setExecutor(LeaderboardsCommand())
+        getCommand("test")?.setExecutor(DebugCommand())
     }
 
     override fun onEnable() {
@@ -34,9 +40,8 @@ class Dynamo : JavaPlugin() {
         }
         instance = this
         enablePacketEvents()
-        ChatListener()
-        val commandManager = SpigotCommandManager(this)
-        commandManager.registerCommands("com.th7bo.dynamo.commands")
+        EventListener()
+        registerAll()
         saveResource("leaderboards.yml", false)
         object : BukkitRunnable() {
             override fun run() {
@@ -46,6 +51,7 @@ class Dynamo : JavaPlugin() {
     }
 
     override fun onDisable() {
+        LeaderboardManager.clear()
         PacketEvents.getAPI().terminate()
     }
 

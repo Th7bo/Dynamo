@@ -12,3 +12,16 @@ softdepend:
   - ViaRewind
   - Geyser-Spigot
   - Skript
+commands:
+  test:
+    description: Test command
+    usage: /<command>
+    permission: dynamo.test
+    aliases:
+      - t
+  leaderboards:
+    description: Leaderboard command
+    usage: /<command>
+    permission: dynamo.leaderboard
+    aliases:
+      - lb

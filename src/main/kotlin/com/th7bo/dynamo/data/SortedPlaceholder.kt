@@ -2,6 +2,7 @@ package com.th7bo.dynamo.data
 
 import com.th7bo.dynamo.Dynamo.Companion.instance
 import me.clip.placeholderapi.PlaceholderAPI
+import org.bukkit.scheduler.BukkitRunnable
 
 class SortedPlaceholder(private val placeholder: String) {
     private val unsortedMap = mutableMapOf<String, Double>()
@@ -9,15 +10,33 @@ class SortedPlaceholder(private val placeholder: String) {
     private var lastSorted = System.currentTimeMillis() - 2000
 
     init {
+        println("PLACEHOLDER HAS BEEN CREATED")
         addOfflinePlayers()
         updatePlaceholderData()
-        sortPlaceholder()
+        object : BukkitRunnable() {
+            override fun run() {
+                sortPlaceholder()
+            }
+        }.runTaskLater(instance, 40L)
     }
 
     fun addOfflinePlayers() {
         for (player in instance.server.offlinePlayers) { // offline players only need to be added once, since they don't change
             val value = PlaceholderAPI.setPlaceholders(player, "%$placeholder%")
-            val name = player.name ?: continue
+            val name = player.name
+            if (name == null) {
+                println("Player name for $player is null!")
+                continue
+            }
+            if (unsortedMap[name] != null) continue
+            unsortedMap[name] = value.toDoubleOrNull() ?: 0.0
+            if (name.lowercase().contains("th7bo")) {
+                println("$name has a value of ${unsortedMap[name]} in $placeholder!")
+            }
+        }
+        for (player in instance.server.onlinePlayers) {
+            val value = PlaceholderAPI.setPlaceholders(player, "%$placeholder%")
+            val name = player.name
             unsortedMap[name] = value.toDoubleOrNull() ?: 0.0
         }
     }
@@ -43,6 +62,10 @@ class SortedPlaceholder(private val placeholder: String) {
 
     fun getValue(index: Int): Double {
         return sortedMap.values.elementAtOrNull(index) ?: 0.0
+    }
+
+    fun getValue(name: String): Double {
+        return sortedMap[name] ?: 0.0
     }
 
     fun getPlayerPosition(uuid: String) : Int {

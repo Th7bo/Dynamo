@@ -12,6 +12,7 @@ import com.th7bo.dynamo.utils.FormatHelper.Companion.parse
 import net.kyori.adventure.text.Component
 import org.bukkit.Bukkit
 import org.bukkit.Location
+import org.bukkit.Sound
 import org.bukkit.entity.Player
 import org.slf4j.LoggerFactory
 import java.util.*
@@ -59,6 +60,7 @@ object Misc {
 
     fun error(p: Player, msg: String) {
         p.sendMessage(("<dark_red><underlined>$msg").parse(true))
+        p.playSound(p.location, Sound.ENTITY_VILLAGER_NO, 1f, 1f)
     }
 
     //
@@ -73,9 +75,9 @@ object Misc {
     fun getDestroyPacket(id: Int) : PacketWrapper<*> {
         return WrapperPlayServerDestroyEntities(id)
     }
-//    fun getDestroyPacket(vararg nums: Int) : Any {
-//        return WrapperPlayServerDestroyEntities(nums)
-//    }
+    fun getDestroyPacket(vararg nums: Int) : Any {
+        return WrapperPlayServerDestroyEntities(*nums)
+    }
 
 
 

@@ -21,19 +21,20 @@ class EntityInteractListener : PacketListener {
             lastRead[uuid] = System.currentTimeMillis()
             val wrappedEntity = WrapperPlayClientInteractEntity(event)
             val entityID = wrappedEntity.entityId
-            for (lb in LeaderboardManager.dynamicLeaderboards) {
+            for (lb in LeaderboardManager.leaderboards) {
+                if (!lb.value.dynamic) continue
                 if (lb.value.index[uuid] == null) lb.value.index[uuid] = 0
                 if (lb.value.interactions.containsKey(uuid)) {
                     if (lb.value.interactions[uuid]!!.indexOf(entityID) == 0) {
                         var new = (lb.value.index[uuid] ?: 0) - 1
                         if (new < 0) new = lb.value.placeholders.size - 1
                         lb.value.index[uuid] = new
-                        lb.value.update(player, true)
+                        lb.value.update(player)
                     } else if (lb.value.interactions[uuid]!!.indexOf(entityID) == 1) {
                         var new = (lb.value.index[uuid] ?: 0) + 1
                         if (new > lb.value.placeholders.size - 1) new = 0
                         lb.value.index[uuid] = new
-                        lb.value.update(player, true)
+                        lb.value.update(player)
                     }
                 }
             }
