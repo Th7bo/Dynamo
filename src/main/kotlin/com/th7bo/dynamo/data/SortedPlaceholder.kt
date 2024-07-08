@@ -10,7 +10,6 @@ class SortedPlaceholder(private val placeholder: String) {
     private var lastSorted = System.currentTimeMillis() - 2000
 
     init {
-        println("PLACEHOLDER HAS BEEN CREATED")
         addOfflinePlayers()
         updatePlaceholderData()
         object : BukkitRunnable() {
@@ -25,14 +24,10 @@ class SortedPlaceholder(private val placeholder: String) {
             val value = PlaceholderAPI.setPlaceholders(player, "%$placeholder%")
             val name = player.name
             if (name == null) {
-                println("Player name for $player is null!")
                 continue
             }
             if (unsortedMap[name] != null) continue
             unsortedMap[name] = value.toDoubleOrNull() ?: 0.0
-            if (name.lowercase().contains("th7bo")) {
-                println("$name has a value of ${unsortedMap[name]} in $placeholder!")
-            }
         }
         for (player in instance.server.onlinePlayers) {
             val value = PlaceholderAPI.setPlaceholders(player, "%$placeholder%")
