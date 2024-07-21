@@ -4,6 +4,7 @@ import com.th7bo.dynamo.Dynamo.Companion.instance
 import com.th7bo.dynamo.managers.LeaderboardManager.sortedPlaceholders
 import com.th7bo.dynamo.managers.LeaderboardManager
 import com.th7bo.dynamo.utils.*
+import me.clip.placeholderapi.PlaceholderAPI
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer
 import org.bukkit.Bukkit
 import org.bukkit.Location
@@ -310,10 +311,11 @@ class Leaderboard(var key: String, var build: Boolean = false) : Listener {
                         } else {
                             line_format.replace("\$player", play)
                         }
-                        lines.add(line_format)
+                        lines.add(PlaceholderAPI.setPlaceholders(p, line_format))
                     }
                 } else {
-                    lines.add(line.replace("\$refreshTime", getTimeLeft()).replace("\$place", playerPlace).replace("\$variable", names[index]).replace("\$total", sortedPlaceholders[holder]!!.getSize().toString()))
+                    val newLine = line.replace("\$refreshTime", getTimeLeft()).replace("\$place", playerPlace).replace("\$variable", names[index]).replace("\$total", sortedPlaceholders[holder]!!.getSize().toString())
+                    lines.add(PlaceholderAPI.setPlaceholders(p, newLine))
                 }
             }
         } else {
@@ -327,10 +329,11 @@ class Leaderboard(var key: String, var build: Boolean = false) : Listener {
                         place += 1
                         var line_format = if (formats.containsKey(place)) formats[place]!! else defaultFormat!!
                         line_format = line_format.replace("\$value", scores[place - 1]).replace("\$place", place.toString()).replace("\$player", play)
-                        lines.add(line_format)
+                        lines.add(PlaceholderAPI.setPlaceholders(p, line_format))
                     }
                 } else {
-                    lines.add(line.replace("\$refreshTime", getTimeLeft()).replace("\$place", playerPlace).replace("\$variable", names[index]).replace("\$total", sortedPlaceholders[holder]!!.getSize().toString()))
+                    val newLine = line.replace("\$refreshTime", getTimeLeft()).replace("\$place", playerPlace).replace("\$variable", names[index]).replace("\$total", sortedPlaceholders[holder]!!.getSize().toString())
+                    lines.add(PlaceholderAPI.setPlaceholders(p, newLine))
                 }
             }
         }
